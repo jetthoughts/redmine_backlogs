@@ -4,6 +4,9 @@
     <div class="v"><%= id_or_empty(sprint) %></div>
   </div>
   <div class="name editable" fieldname="name"><%= sprint.name %></div>
+  <% if !@sprint.new_record? and @project != sprint.project %>
+    <div class="project_name">(<%= sprint.project.name %>)</div>
+  <% end %>
   <div class="sprint_start_date editable date" fieldname="sprint_start_date"><%= sprint.sprint_start_date || "no start" %></div>
   <div class="effective_date editable date" fieldname="effective_date"><%= sprint.effective_date || "no end" %></div>
   <div class="description editable" fieldname="description" fieldtype="textarea"><%= sprint.description %></div>
