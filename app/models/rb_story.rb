@@ -4,18 +4,18 @@ class RbStory < Issue
     acts_as_list
 
     def self.condition(project_id, sprint_id, extras=[])
-      if sprint_id.nil?  
-        c = ["
-          project_id = ?
+      c = if sprint_id.nil?  
+        ["
+          (project_id = ? or projects.parent_id = ?)
           and tracker_id in (?)
           and fixed_version_id is NULL
-          and is_closed = ?", project_id, RbStory.trackers, false]
+          and is_closed = ?", project_id, project_id, RbStory.trackers, false]
       else
-        c = ["
-          project_id = ?
+        ["
+          (project_id = ? or projects.parent_id = ?)
           and tracker_id in (?)
           and fixed_version_id = ?",
-          project_id, RbStory.trackers, sprint_id]
+          project_id, project_id, RbStory.trackers, sprint_id]
       end
 
       if extras.size > 0
@@ -36,7 +36,7 @@ class RbStory < Issue
       RbStory.find(:all,
             :order => RbStory::ORDER,
             :conditions => RbStory.condition(project_id, sprint_id),
-            :joins => :status,
+            :joins => [:status, :project],
             :limit => options[:limit]).each_with_index {|story, i|
         story.rank = i + 1
         stories << story
