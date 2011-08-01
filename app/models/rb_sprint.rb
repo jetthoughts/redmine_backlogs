@@ -94,8 +94,7 @@ class RbSprint < Version
     named_scope :open_sprints, lambda { |project|
         {
             :order => 'sprint_start_date ASC, effective_date ASC',
-            :joins => :project,
-            :conditions => [ "versions.status = 'open' and (versions.project_id = ? or projects.parent_id = ?)", project.id, project.id ]
+            :conditions => [ "status = 'open' and project_id = ?", project.id ]
         }
     }
 
