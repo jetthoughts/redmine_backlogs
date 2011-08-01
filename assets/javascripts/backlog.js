@@ -114,7 +114,7 @@ RB.Backlog = RB.Object.create({
   },
     
   getStories: function(){
-    return this.getList().children(".story");
+    return this.getList().children(".story:not(.member)");
   },
 
   getList: function(){

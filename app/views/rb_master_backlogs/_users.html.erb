@@ -1,23 +1,17 @@
-<div class="backlog">
+<div class="backlog" style="position: relative;">
   <div class="header">
-    <div class="menu">
-      <div class="icon ui-icon ui-icon-carat-1-s"></div>
-      <ul class="items">
-      </ul>
-    </div>
     <div class="label">Users</div>
     
   </div>
   <ul class="stories">
-    <% Memeber.all.each do |member| %>
-    <li class="model story" id="<%= story_html_id_or_empty(member) %>">
+    <% @project.members.each do |member| %>
+    <li class="model member story" id="memeber_<%=member.id-%>">
       <div class="id">
-        <div class="t"><%= issue_link_or_empty(member) %></div>
+        <div class="t"><%= link_to(member.name) %></div>
         <div class="v"><%= id_or_empty(member) %></div>
       </div>
-      <div class="tracker_id" fieldtype="select" fieldname="tracker_id">
-        <div class="t"><%= member.name %></div>
-        <div class="v"><%= id_or_empty(member) %></div>
+      <div class='subject'>
+        <%= member.name %>
       </div>
     </li>
     <% end %>
