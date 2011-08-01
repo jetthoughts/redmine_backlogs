@@ -4,36 +4,34 @@ class Burndown
   def initialize(sprint, burn_direction)
     burn_direction = burn_direction || Setting.plugin_redmine_backlogs[:points_burn_direction]
 
-    @days = sprint.days
     @sprint_id = sprint.id
+    @days = sprint.days(:all)
 
-    now = Time.now
-    days = @days.collect{|d| Time.local(d.year, d.mon, d.mday, 0, 0, 0) }.select{|d| d <= now }
-    days[0] = :first
-    days << :last
+    # these dates are actually :first (= value at start of sprint, x * end of day, :last (= value at end of sprint)
+    active = sprint.days(:active).collect{|d| Time.local(d.year, d.mon, d.mday, 0, 0, 0) }
+    active[0] = :first
+    active << :last
 
-    data = sprint.stories.collect{|s| s.burndown(days) }
+    data = sprint.stories.collect{|s| s.burndown }
 
-    filler = [nil] * ((@days.size + 1) - days.size)
-
-    alldays = (0 .. @days.size)
-    ndays = days.size
-    days = (0..days.size)
+    # active has the start value added, so subtract one
+    days = active.size - 1
+    active = (0..days)
 
     @data = {}
 
-    @data[:points_committed] = days.collect{|i| data.collect{|s| s[:points][i] }.compact.inject(0) {|total, p| total + p}} + filler
-    @data[:hours_remaining] = days.collect{|i| data.collect{|s| s[:hours][i] }.compact.inject(0) {|total, h| total + h}} + filler
-    @data[:hours_ideal] = alldays.collect{|i| (@data[:hours_remaining][0] / ndays) * i}.reverse
+    @data[:points_committed] = active.collect{|i| data.collect{|s| s[:points][i] }.compact.inject(0) {|total, p| total + p}}
+    @data[:hours_remaining] = active.collect{|i| data.collect{|s| s[:hours][i] }.compact.inject(0) {|total, h| total + h}}
+    @data[:hours_ideal] = (0 .. @days.size).collect{|i| (@data[:hours_remaining][0] / @days.size) * i}.reverse
 
-    @data[:points_accepted] = days.collect{|i| data.collect{|s| s[:points_accepted][i] }.compact.inject(0) {|total, p| total + p}} + filler
-    @data[:points_resolved] = days.collect{|i| data.collect{|s| s[:points_resolved][i] }.compact.inject(0) {|total, p| total + p}} + filler
+    @data[:points_accepted] = active.collect{|i| data.collect{|s| s[:points_accepted][i] }.compact.inject(0) {|total, p| total + p}}
+    @data[:points_resolved] = active.collect{|i| data.collect{|s| s[:points_resolved][i] }.compact.inject(0) {|total, p| total + p}}
 
-    @data[:points_to_resolve] = days.collect{|i| @data[:points_committed][i] - @data[:points_resolved][i] } + filler
-    @data[:points_to_accept] = days.collect{|i| @data[:points_accepted][i] - @data[:points_resolved][i] } + filler
+    @data[:points_to_resolve] = active.collect{|i| @data[:points_committed][i] - @data[:points_resolved][i] }
+    @data[:points_to_accept] = active.collect{|i| @data[:points_accepted][i] - @data[:points_resolved][i] }
 
-    @data[:points_required_burn_rate] = days.collect{|i| Float(@data[:points_to_resolve][i]) / ((ndays - i) + 0.01) } + filler
-    @data[:hours_required_burn_rate] = days.collect{|i| Float(@data[:hours_remaining][i]) / ((ndays - i) + 0.01) } + filler
+    @data[:points_required_burn_rate] = active.collect{|i| if @days.size == i then Float(@data[:points_to_resolve][i]) else Float(@data[:points_to_resolve][i]) / (@days.size - i) end}
+    @data[:hours_required_burn_rate] = active.collect{|i|  if @days.size == i then Float(@data[:hours_remaining][i]) else Float(@data[:hours_remaining][i]) / (@days.size - i) end}
 
     if burn_direction == 'up'
       @data.delete(:points_to_resolve)
@@ -162,11 +160,21 @@ class RbSprint < Version
         return wiki_page_title
     end
 
-    def days(cutoff = nil)
-        # assumes mon-fri are working days, sat-sun are not. this
-        # assumption is not globally right, we need to make this configurable.
-        cutoff = self.effective_date if cutoff.nil?
-        return (self.sprint_start_date .. cutoff).select {|d| (d.wday > 0 and d.wday < 6) }
+    def days(cutoff)
+      return nil unless has_burndown
+
+      case cutoff
+        when :active
+          d = (self.sprint_start_date .. [self.effective_date, Date.today].min)
+        when :all
+          d = (self.sprint_start_date .. self.effective_date)
+        else
+          raise "Unexpected day range '#{cutoff.inspect}'"
+      end
+
+      # assumes mon-fri are working days, sat-sun are not. this
+      # assumption is not globally right, we need to make this configurable.
+      return d.select {|d| (d.wday > 0 and d.wday < 6) }
     end
 
     def eta

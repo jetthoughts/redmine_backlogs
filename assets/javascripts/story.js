@@ -6,7 +6,7 @@ RB.Story = RB.Object.create(RB.Issue, RB.EditableInplace, {
     var j;  // This ensures that we use a local 'j' variable, not a global one.
     var self = this;
     
-    this.$ = j = $(el);
+    this.$ = j = RB.$(el);
     this.el = el;
     
     // Associate this object with the element for later retrieval
@@ -43,7 +43,7 @@ RB.Story = RB.Object.create(RB.Issue, RB.EditableInplace, {
     var states = RB.constants.story_states['transitions'][tracker_id][user_status][status_id];
     if (!states) { states = RB.constants.story_states['transitions'][tracker_id][user_status][RB.constants.story_states['transitions'][tracker_id][user_status]['default']]; }
 
-    if ($.inArray(status_id, states) == -1) { // a non-available state is currently selected, tracker has changed
+    if (states.indexOf(status_id) == -1) { // a non-available state is currently selected, tracker has changed
       status_id = null;
 
       if (this.$.find('.tracker_id .v').text() == tracker_id) { // if we're switching back to the original tracker, select the original state
@@ -57,7 +57,7 @@ RB.Story = RB.Object.create(RB.Issue, RB.EditableInplace, {
 
     status.empty();
     for (var i = 0; i < states.length; i++) {
-      option = $('<option/>');
+      option = RB.$('<option/>');
       state = RB.constants.story_states['states'][states[i]];
       option.attr('value', states[i]).addClass(state.closed).text(state.name);
       if (states[i] == status_id) { option.attr('selected', 'selected'); }

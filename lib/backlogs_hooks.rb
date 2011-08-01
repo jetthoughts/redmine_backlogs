@@ -46,6 +46,10 @@ module BacklogsPlugin
           snippet += "<tr><th>#{l(:field_velocity_based_estimate)}</th><td>#{vbe ? vbe.to_s + ' days' : '-'}</td></tr>"
         end
 
+        if issue.is_task?
+          snippet += "<tr><th>#{l(:field_initial_estimate)}</th><td>#{issue.historic(:first, 'estimated_hours')}</td></tr>"
+        end
+
         return snippet
       end
 
@@ -94,6 +98,12 @@ module BacklogsPlugin
           snippet += "#{radio_button_tag('copy_tasks', 'open:' + params[:copy_from], true)} #{l(:rb_label_copy_tasks_open)}<br />"
           snippet += "#{radio_button_tag('copy_tasks', 'none', false)} #{l(:rb_label_copy_tasks_none)}<br />"
           snippet += "#{radio_button_tag('copy_tasks', 'all:' + params[:copy_from], false)} #{l(:rb_label_copy_tasks_all)}</p>"
+        end
+
+        if issue.is_task?
+          snippet += "<p><label for='initial_estimate'>#{l(:field_initial_estimate)}</label>"
+          snippet += text_field_tag('initial_estimate', issue.historic(:first, 'estimated_hours'), :size => 3)
+          snippet += '</p>'
         end
 
         return snippet
@@ -175,6 +185,21 @@ module BacklogsPlugin
               }
             end
           end
+        end
+      end
+
+      def controller_issues_edit_after_save(context={ })
+        params = context[:params]
+        issue = context[:issue]
+
+        if issue.is_task?
+          begin
+            initial_estimate = Float(params[:initial_estimate])
+          rescue ArgumentError, TypeError
+            initial_estimate = nil
+          end
+
+          issue.becomes(RbTask).set_initial_estimate(initial_estimate) if initial_estimate
         end
       end
 

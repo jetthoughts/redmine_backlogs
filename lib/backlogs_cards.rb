@@ -205,7 +205,11 @@ module BacklogsCards
     end
 
     def image
-      return open(@url)
+      begin
+        return open(@url)
+      rescue
+        return nil
+      end
     end
 
     attr_reader :url
@@ -333,7 +337,8 @@ module BacklogsCards
               if data['owner.email']
                 dim = box(obj)
 
-                pdf.image Gravatar.new(data['owner.email'], (dim[:h] < dim[:w]) ? dim[:h] : dim[:w]).image, :at => [dim[:x], dim[:y]], :width => dim[:w]
+                img = Gravatar.new(data['owner.email'], (dim[:h] < dim[:w]) ? dim[:h] : dim[:w]).image
+                pdf.image img, :at => [dim[:x], dim[:y]], :width => dim[:w] if img
               end
 
             else
@@ -442,7 +447,7 @@ module BacklogsCards
         data['subject'] = issue.subject.to_s.strip
         data['description'] = issue.description.to_s.strip; data['description'] = data['subject'] if data['description'] == ''
         data['category'] = issue.category ? issue.category.name : ''
-        data['hours.estimated'] = (issue.estimated_hours ? "#{issue.estimated_hours}" : '?') + ' ' + l(:label_hours)
+        data['hours.estimated'] = (issue.initial_estimate || '?').to_s + ' ' + l(:label_hours)
         data['position'] = issue.position ? issue.position : l(:label_not_prioritized)
         data['path'] = (issue.self_and_ancestors.reverse.collect{|i| "#{i.tracker.name} ##{i.id}"}.join(" : ")) + " (#{data['story.position']})"
         data['sprint.name'] = issue.fixed_version ? issue.fixed_version.name : I18n.t(:backlogs_product_backlog)

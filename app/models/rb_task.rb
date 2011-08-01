@@ -27,9 +27,11 @@ class RbTask < Issue
                             true
                           end
 
-    if valid_relationships && task.save
+    if valid_relationships && task.save!
       task.move_before params[:next] unless is_impediment # impediments are not hosted under a single parent, so you can't tree-order them
       task.update_blocked_list params[:blocks].split(/\D+/) if params[:blocks]
+    else
+      raise "Could not save task"
     end
 
     return task
@@ -129,13 +131,35 @@ class RbTask < Issue
     return @rank
   end
 
-  def burndown(dates)
-    bd = {}
+  def burndown
+    return @burndown if @burndown
 
-    bd[:open] = dates.collect{|d| !IssueStatus.find(Integer(historic(d, 'status_id'))).is_closed? }
-    bd[:hours] = dates.collect{|d| historic(d, 'estimated_hours')}
-    bd[:hours] = (0..dates.size-1).collect{|d| bd[:hours][d].nil? ? nil : (bd[:open][d] ? Float(bd[:hours][d]) : 0.0) }
+    dates = story.fixed_version.becomes(RbSprint).days(:active).collect{|d| Time.local(d.year, d.mon, d.mday, 0, 0, 0) }
+    dates[0] = :first
+    dates << :last
 
-    return bd
+    @burndown = {}
+
+    @burndown[:open] = dates.collect{|d| !IssueStatus.find(Integer(historic(d, 'status_id'))).is_closed? }
+    @burndown[:hours] = dates.collect{|d| historic(d, 'estimated_hours')}
+    @burndown[:hours] = (0..dates.size-1).collect{|d| @burndown[:hours][d].nil? ? nil : (@burndown[:open][d] ? Float(@burndown[:hours][d]) : 0.0) }
+
+    return @burndown
+  end
+
+  def set_initial_estimate(hours)
+    jd = JournalDetail.find(:first, :order => "journals.created_on asc", :joins => :journal,
+      :conditions => ["property = 'attr' and prop_key = 'estimated_hours' and journalized_type = 'Issue' and journalized_id = ?", self.id])
+    if jd
+      if !jd.old_value || Float(jd.old_value) != hours
+        JournalDetail.connection.execute("update journal_details set old_value='#{hours.to_s.gsub(/\.0+$/, '')}' where id = #{jd.id}")
+      end
+    else
+      if hours != self.estimated_hours
+        j = Journal.new(:journalized => self, :user => User.current, :created_on => self.created_on)
+        j.details << JournalDetail.new(:property => 'attr', :prop_key => 'estimated_hours', :value => self.estimated_hours, :old_value => hours)
+        j.save!
+      end
+    end
   end
 end

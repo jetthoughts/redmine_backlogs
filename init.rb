@@ -43,22 +43,22 @@ Redmine::Plugin.register :redmine_backlogs do
     # Master backlog permissions
     permission :view_master_backlog, { 
                                        :rb_master_backlogs  => [:show, :menu],
-                                       :rb_sprints          => [:index, :show],
+                                       :rb_sprints          => [:index, :show, :download],
                                        :rb_wikis            => :show,
                                        :rb_stories          => [:index, :show],
                                        :rb_queries          => [:show, :impediments],
-                                       :rb_server_variables => :show,
-                                       :rb_burndown_charts  => :show,
+                                       :rb_server_variables => [:show, :jquery],
+                                       :rb_burndown_charts  => [:show, :print],
                                        :rb_updated_items    => :show
                                      }
 
     permission :view_releases,       {
                                        :rb_releases         => [:index, :show],
-                                       :rb_sprints          => [:index, :show],
+                                       :rb_sprints          => [:index, :show, :download],
                                        :rb_wikis            => :show,
                                        :rb_stories          => [:index, :show],
-                                       :rb_server_variables => :show,
-                                       :rb_burndown_charts  => :show,
+                                       :rb_server_variables => [:show, :jquery],
+                                       :rb_burndown_charts  => [:show, :print],
                                        :rb_updated_items    => :show
                                      }
     
@@ -69,8 +69,8 @@ Redmine::Plugin.register :redmine_backlogs do
                                        :rb_tasks            => [:index, :show],
                                        :rb_impediments      => [:index, :show],
                                        :rb_wikis            => :show,
-                                       :rb_server_variables => :show,
-                                       :rb_burndown_charts  => :show,
+                                       :rb_server_variables => [:show, :jquery],
+                                       :rb_burndown_charts  => [:show, :print],
                                        :rb_updated_items    => :show
                                      }
 

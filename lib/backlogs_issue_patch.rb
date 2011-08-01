@@ -64,7 +64,7 @@ module Backlogs
         return nil unless self.id && self.is_task?
 
         return Issue.find(:first, :order => 'lft DESC',
-          :conditions => [ "root_id = ? and lft < ? and tracker_id in (?)", self.root_id, self.lft, RbStory.trackers ])
+          :conditions => [ "root_id = ? and lft < ? and tracker_id in (?)", self.root_id, self.lft, RbStory.trackers ]).becomes(RbStory)
       end
 
       def blocks
@@ -113,13 +113,13 @@ module Backlogs
             end
           end
 
-        elsif not RbTask.tracker.nil?
-          begin
-            story = self.story
-            if not story.blank?
-              connection.execute "update issues set tracker_id = #{connection.quote(RbTask.tracker)}, fixed_version_id = #{connection.quote(story.fixed_version_id)} where id = #{connection.quote(self.id)}"
-            end
+        elsif self.is_task?
+          story = self.story
+          if not story.blank?
+            connection.execute "update issues set tracker_id = #{connection.quote(RbTask.tracker)}, fixed_version_id = #{connection.quote(story.fixed_version_id)} where id = #{connection.quote(self.id)}"
           end
+
+          connection.execute("update issues set estimated_hours = 0 where id = #{connection.quote(self.id)}") if self.status.backlog == :success
         end
       end
 
@@ -136,8 +136,15 @@ module Backlogs
         end
 
         obj = JournalDetail.find(:first, :order => "journals.created_on asc", :joins => :journal, :conditions => conditions)
-        return obj.old_value if obj
+        return obj.old_value if obj && obj.old_value
+        return obj.value if obj && obj.value
         return self.send(property.intern)
+      end
+
+      def initial_estimate
+        e = self.historic(:first, 'estimated_hours')
+        return nil if e.nil?
+        return Float(e)
       end
     end
   end
