@@ -210,7 +210,8 @@
   width:330px;
 }
 #backlogs_container .backlog .sprint .sprint_start_date,
-#backlogs_container .backlog .sprint .effective_date{
+#backlogs_container .backlog .sprint .effective_date,
+#backlogs_container .backlog .sprint .project_name{
   font-size:12px;
   height:28px;
   line-height:31px;
@@ -222,6 +223,9 @@
 }
 #backlogs_container .backlog .sprint .effective_date{
   left:430px;
+}
+#backlogs_container .backlog .sprint .project_name{
+  left:300px;
 }
 #backlogs_container .backlog .stories{
   list-style:none;

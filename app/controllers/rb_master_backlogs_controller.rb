@@ -5,7 +5,7 @@ class RbMasterBacklogsController < RbApplicationController
 
   def show
     product_backlog_stories = RbStory.product_backlog(@project)
-    sprints = RbSprint.open_sprints(@project)
+    sprints = RbSprint.open_shared_sprints(@project)
     
     last_story = RbStory.find(
                           :first, 
